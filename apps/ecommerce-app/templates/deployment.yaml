@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-deployment
-  namespace: {{ .Release.Namespace }}  # Injection dynamique du namespace pour la prod et Trivy
+  namespace: {{ .Release.Namespace }}  # Namespace dynamique (Corrige KSV-0110)
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -15,31 +15,31 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10005
-        runAsGroup: 10005
+        runAsUser: 10005              # ID utilisateur non-root > 10000 (Corrige KSV-0020)
+        runAsGroup: 10005             # ID groupe non-root > 10000 (Corrige KSV-0021)
         fsGroup: 10005
         seccompProfile:
-          type: RuntimeDefault
+          type: RuntimeDefault        # Profil de sécurité système par défaut (Corrige KSV-0030 / KSV-0104)
       containers:
       - name: web-app
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: {{ .Values.service.targetPort }}
+        - containerPort: {{ .Values.service.targetPort }} # Utilise le port non-privilégié 8080 (Corrige KSV-0117)
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: true # Système de fichiers verrouillé en lecture seule (Corrige KSV-0014)
           capabilities:
             drop:
-            - ALL
-        resources:
+            - ALL                      # Supprime tous les privilèges Linux inutiles (Corrige KSV-0106)
+        resources:                     # Gestion stricte des ressources (Corrige KSV-0015 / KSV-0016 / KSV-0018)
           limits:
             cpu: "200m"
             memory: "256Mi"
           requests:
             cpu: "100m"
             memory: "128Mi"
-        volumeMounts:
+        volumeMounts:                  # Espace temporaire en RAM pour les fichiers de logs éphémères de Nginx
         - mountPath: /tmp
           name: tmp-volume
       volumes:
