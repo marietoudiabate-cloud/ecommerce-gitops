@@ -2,10 +2,11 @@
 replicaCount: 2
 
 image:
-  repository: nginx
-  tag: latest
+  repository: nginxinc/nginx-unprivileged # Image officielle conçue pour tourner sans root
+  tag: "1.25-alpine"                      # Version figée (Corrige KSV-0013)
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
   port: 80
+  targetPort: 8080                        # Le trafic reçu sur le port 80 est envoyé vers le port 8080 du pod (Corrige KSV-0117)
